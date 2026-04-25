@@ -1,0 +1,4 @@
+- targets:
+    - localhost:9167
+  labels:
+    job: unbound

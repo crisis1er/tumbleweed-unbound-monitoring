@@ -1,0 +1,15 @@
+[Unit]
+Description=Unbound cache hit watcher — enrichit les cache hits avec les IPs résolues
+After=unbound.service
+Requires=unbound.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/unbound-cache-watcher.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
