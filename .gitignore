@@ -1,0 +1,28 @@
+# Secrets and credentials
+*.env
+*.secret
+secrets/
+credentials/
+
+# Editor artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.bak.*
+*.orig
+
+# Temporary files
+/tmp/
+*.tmp
+
+# Grafana dashboard exports (keep only versioned JSON)
+*-auto-export.json
