@@ -3,11 +3,46 @@
 Version:  v1.0
 Date:     2026-04-25
 Platform: openSUSE Tumbleweed
+Unbound:  1.x (verbosity: 4 required)
+Alloy:    v1.12+
 
 ---
 
 ## What's in this release
 
-### v1.0 — Initial release
-- Base configuration structure
-- DEC-010 documentation files (LICENSE, README, CHANGELOG, RELEASE, SECURITY, SUPPORT, CONTRIBUTING, CODE_OF_CONDUCT, MAINTAINERS, .gitignore)
+### v1.0 — First production release
+
+**Alloy pipelines** (`alloy/pipelines.alloy`)
+- `unbound` — all raw log lines → Loki job="unbound"
+- `unbound_local` — cache hits + blocked domains (latency=0, no Quad9) → job="unbound_local"
+- `unbound_quad9` — Quad9 server tracking (IPv4/IPv6) → job="unbound_quad9", label quad9_server
+- `unbound_cache_hits` — enriched cache hits from script output → job="unbound_cache_hits"
+
+**Grafana dashboard** (`grafana/unbound-full-v1.json`) — v78, 34 panels
+- Query rates, cache hit/miss ratio, DNSSEC validation, latency percentiles (P50·P95·P99)
+- NXDOMAIN / SERVFAIL increase([12h]) — orange≥6 / red≥12
+- Bogus DNSSEC + suspicious activity increase([12h]) — green=0 / red≥1
+- Live: blocked domains, DNS errors with client IP, Quad9 upstream resolutions
+- Live: local resolutions (cache hits without Quad9), enriched cache hits with resolved IPs
+- Bargauge: Quad9 server used (IPv4 149.112.112.112 / IPv6 2620:fe::9)
+
+**Prometheus target** (`prometheus/unbound-targets.yml`)
+- unbound_exporter on localhost:9167, job="unbound"
+
+**Cache enrichment script** (`scripts/`)
+- `unbound-cache-watcher.py` — Python daemon correlating cache hits with resolved IPs via dump_cache + ANSWER SECTION
+- `unbound-cache-watcher.service` — systemd unit (After=unbound.service)
+
+---
+
+## Installation notes
+
+1. Copy `alloy/pipelines.alloy` fragments into `/etc/alloy/config.alloy`
+2. Deploy `scripts/unbound-cache-watcher.py` to `/usr/local/bin/`
+3. Deploy `scripts/unbound-cache-watcher.service` to `/etc/systemd/system/`
+4. Enable: `systemctl enable --now unbound-cache-watcher.service`
+5. Set `/var/log/unbound_cache_hits.log` permissions: `640 root:root` + `setfacl -m u:alloy:r`
+6. Import `grafana/unbound-full-v1.json` into Grafana
+7. Add `prometheus/unbound-targets.yml` to Prometheus scrape config
+
+**Requirement:** `verbosity: 4` in `/etc/unbound/unbound.conf`
